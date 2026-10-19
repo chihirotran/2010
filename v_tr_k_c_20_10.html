@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vũ Trụ Ký Ức 20/10 - Dành Tặng Mẹ & Chị</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts hỗ trợ tiếng Việt rõ nét cho người lớn tuổi -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #05020a;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            color: #ffffff;
+        }
+        .font-handwriting {
+            font-family: 'Dancing Script', cursive;
+        }
+        #canvas-3d, #canvas-matrix {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        #canvas-matrix {
+            z-index: 20;
+            pointer-events: none;
+            transition: opacity 1.2s ease-out;
+        }
+        #canvas-3d {
+            z-index: 10;
+        }
+        /* Hiệu ứng viền sáng Hologram cho thẻ lời chúc */
+        .hologram-card {
+            background: rgba(20, 8, 36, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1.5px solid rgba(255, 130, 190, 0.6);
+            box-shadow: 0 0 30px rgba(255, 60, 150, 0.35), inset 0 0 15px rgba(255, 180, 220, 0.15);
+        }
+        .glow-text {
+            text-shadow: 0 0 12px rgba(255, 120, 180, 0.9), 0 0 24px rgba(255, 180, 90, 0.6);
+        }
+        .btn-glass {
+            background: rgba(35, 15, 55, 0.75);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 160, 210, 0.45);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease;
+        }
+        .btn-glass:hover, .btn-glass:active {
+            background: rgba(236, 72, 153, 0.35);
+            border-color: rgba(255, 210, 235, 0.9);
+            transform: translateY(-1px);
+        }
+        .btn-active {
+            background: linear-gradient(135deg, #ec4899, #f59e0b) !important;
+            color: #fff !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.75);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 5, 25, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(236, 72, 153, 0.6);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CANVAS 2D CHO MÀN MỞ ĐẦU MATRIX CODE (Chậm rãi, cảm xúc 8.5 giây) -->
+    <canvas id="canvas-matrix"></canvas>
+
+    <!-- CANVAS 3D THREE.JS CHO TRÁI TIM HẠT & VŨ TRỤ KÝ ỨC -->
+    <canvas id="canvas-3d"></canvas>
+
+    <!-- BADGE TRẠNG THÁI MỞ ĐẦU (0 - 8.5s) -->
+    <div id="intro-overlay" class="fixed top-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none transition-opacity duration-1000 text-center w-11/12 max-w-md">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-pink-950/80 border border-pink-400/50 text-pink-200 text-xs sm:text-sm shadow-lg">
+            <span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            <span id="intro-status-text">Đang mở hộp thời gian ký ức 20/10...</span>
+        </div>
+    </div>
+
+    <!-- GIAO DIỆN CHÍNH (Hiện lên sau khi Trái tim nổ tung ở giây thứ 8.5) -->
+    <div id="main-ui" class="fixed inset-0 z-30 pointer-events-none flex flex-col justify-between p-3 sm:p-5 opacity-0 transition-opacity duration-1000">
+        
+        <!-- THANH ĐIỀU KHIỂN TRÊN CÙNG -->
+        <div class="flex flex-wrap items-center justify-between gap-2 w-full max-w-6xl mx-auto pointer-events-auto">
+            <div class="flex items-center gap-2.5 bg-black/45 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-pink-500/30">
+                <span class="text-2xl">🌸</span>
+                <div>
+                    <h1 class="text-sm sm:text-base font-bold bg-gradient-to-r from-pink-300 via-amber-200 to-pink-300 bg-clip-text text-transparent leading-tight">
+                        Vũ Trụ Ký Ức 20/10
+                    </h1>
+                    <p class="text-[11px] text-pink-200/80 hidden sm:block">Dành tặng Mẹ yêu & Chị gái</p>
+                </div>
+            </div>
+
+            <!-- Chuyển chế độ Tự động / Tự do chạm xoay -->
+            <div class="flex items-center gap-1.5 bg-black/50 backdrop-blur-md p-1 rounded-2xl border border-pink-400/30">
+                <button id="btn-mode-auto" onclick="setCameraMode('auto')" class="btn-glass btn-active px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5">
+                    <span>🎥</span>
+                    <span>Tự động lướt</span>
+                </button>
+                <button id="btn-mode-free" onclick="setCameraMode('free')" class="btn-glass px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-1.5 text-pink-100">
+                    <span>🖐️</span>
+                    <span>Tự do chạm xoay</span>
+                </button>
+            </div>
+
+            <!-- Tiện ích: Âm thanh, Xem lại Intro, Tùy chỉnh ảnh -->
+            <div class="flex items-center gap-1.5">
+                <button id="btn-sound" onclick="toggleMusic()" class="btn-glass p-2.5 rounded-xl text-pink-200 hover:text-white" title="Bật/Tắt giai điệu ấm áp">
+                    <span id="sound-icon" class="text-base">🔇</span>
+                </button>
+                <button onclick="replayIntro()" class="btn-glass px-3 py-2 rounded-xl text-xs sm:text-sm font-medium text-amber-200 flex items-center gap-1" title="Xem lại màn mở đầu chậm">
+                    <span>✨</span>
+                    <span class="hidden md:inline">Mở đầu</span>
+                </button>
+                <button onclick="togglePhotoDrawer(true)" class="btn-glass px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-pink-100 border-amber-400/60 flex items-center gap-1.5 bg-gradient-to-r from-pink-900/60 to-amber-900/60">
+                    <span>📸</span>
+                    <span>Thay ảnh & Lời chúc</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- THẺ LỜI CHÚC CHỮ TO RÕ RÀNG Ở DƯỚI CÙNG -->
+        <div class="w-full max-w-2xl mx-auto mb-1 sm:mb-2 pointer-events-auto">
+            <div id="wish-card" class="hologram-card rounded-3xl p-4 sm:p-6 transition-all duration-500 transform">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                    <span id="card-badge" class="px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-gradient-to-r from-pink-500 to-amber-500 text-white shadow">
+                        Kỷ niệm 1 / 9
+                    </span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="prevFrame()" class="btn-glass px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold hover:bg-pink-600/40 active:scale-95">
+                            ◀ Ảnh trước
+                        </button>
+                        <button onclick="triggerLoveBurst()" class="btn-glass px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold bg-pink-600/40 border-pink-300 text-white active:scale-95">
+                            💖 Thả tim
+                        </button>
+                        <button onclick="nextFrame()" class="btn-glass px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold hover:bg-pink-600/40 active:scale-95">
+                            Ảnh tiếp ▶
+                        </button>
+                    </div>
+                </div>
+
+                <h2 id="card-title" class="text-xl sm:text-2xl md:text-3xl font-extrabold text-amber-300 glow-text mb-2 leading-snug">
+                    Mùa Hè Rực Rỡ Của Cả Nhà
+                </h2>
+
+                <p id="card-wish" class="text-base sm:text-lg md:text-xl text-pink-50 leading-relaxed font-medium">
+                    Một chuyến đi biển, một bầu trời trong xanh và thật nhiều tiếng cười. Chúc Mẹ và Chị luôn có những ngày tháng thảnh thơi, rạng rỡ bên gia đình mình!
+                </p>
+
+                <p id="interaction-hint" class="mt-2 text-xs sm:text-sm text-amber-200/90 text-center">
+                    💡 Chạm vào khung ảnh bất kỳ để thả mưa tim & hoa hồng ✨
+                </p>
+
+                <div class="mt-3 pt-2.5 border-t border-pink-400/25 flex items-center justify-between flex-wrap gap-2">
+                    <span class="text-xs sm:text-sm text-pink-300/90 flex items-center gap-1">
+                        <span>🌹</span> Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10
+                    </span>
+                    <span id="card-signature" class="font-handwriting text-xl sm:text-2xl text-amber-300">
+                        — Con trai của mẹ và thằng em trai của chị —
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRAWER QUẢN LÝ ẢNH & LỜI CHÚC -->
+    <div id="photo-drawer-backdrop" class="fixed inset-0 z-40 bg-black/75 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300 flex justify-end">
+        <div id="photo-drawer" class="w-full max-w-lg bg-[#120721] border-l border-pink-500/40 h-full flex flex-col justify-between p-4 sm:p-6 overflow-y-auto text-white shadow-2xl">
+            <div>
+                <div class="flex items-center justify-between pb-4 border-b border-pink-500/30">
+                    <div>
+                        <h3 class="text-lg sm:text-xl font-bold text-amber-300 flex items-center gap-2">
+                            <span>📸</span> Quản lý Kỷ niệm 20/10
+                        </h3>
+                        <p class="text-xs sm:text-sm text-pink-200/80 mt-0.5">
+                            Hệ thống đã tự động chọn sẵn ảnh Google Photos của Mẹ & Chị. Bạn có thể đổi ảnh hoặc sửa lời chúc tùy ý.
+                        </p>
+                    </div>
+                    <button onclick="togglePhotoDrawer(false)" class="p-2 rounded-xl bg-pink-950/80 border border-pink-500/40 text-pink-200 hover:text-white">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="my-4 p-3.5 rounded-2xl bg-gradient-to-r from-pink-950/70 to-amber-950/50 border border-amber-400/40">
+                    <label class="block text-sm font-bold text-amber-200 mb-1.5">
+                        ⚡ Tải nhanh nhiều ảnh từ máy tính/điện thoại:
+                    </label>
+                    <input type="file" id="bulk-file-input" accept="image/*" multiple onchange="handleBulkFiles(event)"
+                        class="block w-full text-xs sm:text-sm text-pink-200 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:sm:text-sm file:font-semibold file:bg-pink-600 file:text-white hover:file:bg-pink-500 cursor-pointer" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs sm:text-sm font-semibold text-pink-200 mb-1">
+                        ✍️ Chữ ký ở cuối thiệp chúc:
+                    </label>
+                    <input type="text" id="input-signature" value="Con trai của mẹ và thằng em trai của chị"
+                        oninput="updateSignature(this.value)"
+                        class="w-full px-3.5 py-2 rounded-xl bg-black/50 border border-pink-500/40 text-amber-200 text-sm focus:outline-none focus:border-amber-400" />
+                </div>
+
+                <div id="frames-editor-list" class="space-y-4"></div>
+            </div>
+
+            <div class="pt-4 mt-6 border-t border-pink-500/30 sticky bottom-0 bg-[#120721] flex items-center justify-between gap-3">
+                <button onclick="resetDefaultMemories()" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs sm:text-sm font-medium text-pink-200">
+                    Khôi phục mặc định
+                </button>
+                <button onclick="togglePhotoDrawer(false)" class="flex-1 py-2.5 px-5 rounded-xl bg-gradient-to-r from-pink-600 to-amber-500 text-white font-bold text-sm sm:text-base shadow-lg">
+                    ✅ Hoàn tất & Ngắm Vũ Trụ 3D
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /********************************************************************
+         * 1. DỮ LIỆU KÝ ỨC VỚI ẢNH GIA ĐÌNH CỤC BỘ
+         ********************************************************************/
+        const DEFAULT_MEMORIES = [
+            {
+                id: 0,
+                title: "Mùa Hè Rực Rỡ Của Cả Nhà",
+                wish: "Một chuyến đi biển, một bầu trời trong xanh và thật nhiều tiếng cười. Chúc Mẹ và Chị luôn có những ngày tháng thảnh thơi, rạng rỡ bên gia đình mình!",
+                themeColor: "#ff6b9d",
+                accentColor: "#ffd166",
+                icon: "💐",
+                subtitle: "Chuyến đi biển đầy nắng",
+                imageUrl: "assets/memories/01.jpg"
+            },
+            {
+                id: 1,
+                title: "Ba Thế Hệ, Một Tình Thân",
+                wish: "Giữa biển trời rộng lớn, tình thân của gia đình mình vẫn luôn gần gũi và ấm áp. Chúc Mẹ, Chị và cả nhà mãi sum vầy trong niềm vui!",
+                themeColor: "#c77dff",
+                accentColor: "#ff9ebb",
+                icon: "🥂",
+                subtitle: "Yêu thương bên bờ biển",
+                imageUrl: "assets/memories/02.jpg"
+            },
+            {
+                id: 2,
+                title: "Mẹ Và Mùa Hoa Nở",
+                wish: "Mẹ rạng rỡ giữa những đóa hoa đang nở, như chính tình yêu Mẹ luôn vun đầy cho gia đình. Con chúc Mẹ luôn khỏe mạnh và nhiều niềm vui!",
+                themeColor: "#ff85a1",
+                accentColor: "#ffe5ec",
+                icon: "👶💖",
+                subtitle: "Khoảnh khắc dịu dàng của Mẹ",
+                imageUrl: "assets/memories/03.jpg"
+            },
+            {
+                id: 3,
+                title: "Mẹ Trên Con Đường Xanh",
+                wish: "Mong Mẹ luôn giữ được năng lượng, sự tự tin và niềm vui trên mọi con đường. Với chúng con, Mẹ lúc nào cũng thật tuyệt vời!",
+                themeColor: "#f72585",
+                accentColor: "#ffbe0b",
+                icon: "🌺",
+                subtitle: "Mỗi hành trình đều thật tươi",
+                imageUrl: "assets/memories/04.jpg"
+            },
+            {
+                id: 4,
+                title: "Bình Yên Trong Gió",
+                wish: "Giữa cỏ cây và gió trời, nụ cười của Mẹ làm mọi thứ trở nên bình yên hơn. Chúc Mẹ mỗi ngày đều an nhiên và hạnh phúc!",
+                themeColor: "#fb5607",
+                accentColor: "#ffbe0b",
+                icon: "👑",
+                subtitle: "Một chiều thật nhẹ nhàng",
+                imageUrl: "assets/memories/05.jpg"
+            },
+            {
+                id: 5,
+                title: "Nụ Cười Giữa Vườn Nhà",
+                wish: "Mẹ và khu vườn hoa rực rỡ là một bức tranh thật đẹp. Con chúc Mẹ mãi giữ nụ cười tươi và một trái tim đầy yêu thương!",
+                themeColor: "#ff006e",
+                accentColor: "#ffbe0b",
+                icon: "🏡✨",
+                subtitle: "Khu vườn đầy sắc hoa",
+                imageUrl: "assets/memories/06.jpg"
+            },
+            {
+                id: 6,
+                title: "Nét Xuân Của Chị",
+                wish: "Chị trong tà áo dài hồng mang theo cả không khí mùa xuân. Chúc Chị luôn xinh đẹp, vui tươi và gặp thật nhiều điều may mắn!",
+                themeColor: "#c77dff",
+                accentColor: "#ff9ebb",
+                icon: "🌸",
+                subtitle: "Áo dài và nụ cười đầu năm",
+                imageUrl: "assets/memories/07.jpg"
+            },
+            {
+                id: 7,
+                title: "Một Góc Bình Yên Của Chị",
+                wish: "Một góc sân xanh, một nụ cười ấm áp — bình yên đôi khi giản dị như thế. Chúc Chị luôn có thật nhiều ngày vui bên những người mình thương!",
+                themeColor: "#fb5607",
+                accentColor: "#ffbe0b",
+                icon: "☕",
+                subtitle: "Nụ cười trong nắng sớm",
+                imageUrl: "assets/memories/08.jpg"
+            },
+            {
+                id: 8,
+                title: "Hành Trình Của Những Yêu Thương",
+                wish: "Mỗi chuyến đi cùng nhau đều trở thành một kỷ niệm đáng quý. Chúc gia đình mình luôn có thêm nhiều hành trình rực rỡ và tiếng cười!",
+                themeColor: "#ff006e",
+                accentColor: "#ffbe0b",
+                icon: "🚣‍♀️",
+                subtitle: "Cả nhà cùng khám phá",
+                imageUrl: "assets/memories/09.jpg"
+            }
+        ];
+
+        let memories = JSON.parse(JSON.stringify(DEFAULT_MEMORIES));
+        let globalSignature = "Con trai của mẹ và thằng em trai của chị";
+        const preloadedImages = {};
+
+        // Tải trước tất cả ảnh để hiển thị mượt mà
+        function preloadAllImages(callback) {
+            let loadedCount = 0;
+            memories.forEach((mem, idx) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = function() {
+                    preloadedImages[idx] = img;
+                    loadedCount++;
+                    if (loadedCount === memories.length && callback) callback();
+                };
+                img.onerror = function() {
+                    loadedCount++;
+                    if (loadedCount === memories.length && callback) callback();
+                };
+                img.src = mem.imageUrl;
+            });
+        }
+
+        /********************************************************************
+         * 2. TẠO TEXTURE KHUNG ẢNH POLAROID HOLOGRAM 3D
+         ********************************************************************/
+        function createMemoryCanvasTexture(memoryItem, loadedImg = null) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 720;
+            canvas.height = 900;
+            const ctx = canvas.getContext('2d');
+
+            const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+            grad.addColorStop(0, '#2b0938');
+            grad.addColorStop(0.5, '#4a1248');
+            grad.addColorStop(1, '#1a0628');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const radial = ctx.createRadialGradient(360, 380, 40, 360, 380, 380);
+            radial.addColorStop(0, memoryItem.themeColor + '66');
+            radial.addColorStop(1, 'transparent');
+            ctx.fillStyle = radial;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const photoX = 45, photoY = 45, photoW = 630, photoH = 640;
+
+            ctx.save();
+            roundRect(ctx, photoX, photoY, photoW, photoH, 24);
+            ctx.clip();
+
+            if (loadedImg) {
+                const imgRatio = loadedImg.width / loadedImg.height;
+                const boxRatio = photoW / photoH;
+                let drawW, drawH, drawX, drawY;
+                if (imgRatio > boxRatio) {
+                    drawH = photoH;
+                    drawW = loadedImg.width * (photoH / loadedImg.height);
+                    drawX = photoX - (drawW - photoW) / 2;
+                    drawY = photoY;
+                } else {
+                    drawW = photoW;
+                    drawH = loadedImg.height * (photoW / loadedImg.width);
+                    drawX = photoX;
+                    drawY = photoY - (drawH - photoH) / 2;
+                }
+                ctx.drawImage(loadedImg, drawX, drawY, drawW, drawH);
+            } else {
+                ctx.fillStyle = memoryItem.themeColor;
+                ctx.fillRect(photoX, photoY, photoW, photoH);
+            }
+            ctx.restore();
+
+            ctx.save();
+            roundRect(ctx, photoX, photoY, photoW, photoH, 24);
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = memoryItem.accentColor;
+            ctx.shadowColor = memoryItem.themeColor;
+            ctx.shadowBlur = 18;
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 34px "Be Vietnam Pro", sans-serif';
+            ctx.textAlign = 'center';
+            wrapCanvasText(ctx, memoryItem.title, 360, 745, 620, 42);
+
+            ctx.fillStyle = '#ffd166';
+            ctx.font = '600 24px "Be Vietnam Pro", sans-serif';
+            ctx.fillText('✨ Chúc Mừng Ngày Phụ Nữ Việt Nam 20/10 ✨', 360, 855);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.needsUpdate = true;
+            return texture;
+        }
+
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.lineTo(x + w - r, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+            ctx.lineTo(x + w, y + h - r);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+            ctx.lineTo(x + r, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+            ctx.lineTo(x, y + r);
+            ctx.quadraticCurveTo(x, y, x + r, y);
+            ctx.closePath();
+        }
+
+        function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight) {
+            const words = text.split(' ');
+            let line = '';
+            let curY = y;
+            for (let n = 0; n < words.length; n++) {
+                const testLine = line + words[n] + ' ';
+                const metrics = ctx.measureText(testLine);
+                if (metrics.width > maxWidth && n > 0) {
+                    ctx.fillText(line.trim(), x, curY);
+                    line = words[n] + ' ';
+                    curY += lineHeight;
+                } else {
+                    line = testLine;
+                }
+            }
+            ctx.fillText(line.trim(), x, curY);
+        }
+
+        /********************************************************************
+         * 3. MƯA CHỮ MATRIX CODER (CHẬM RÃI, CẢM XÚC TRONG 8.5 GIÂY)
+         ********************************************************************/
+        const matrixCanvas = document.getElementById('canvas-matrix');
+        const mCtx = matrixCanvas.getContext('2d');
+        const MATRIX_KEYWORDS = [
+            "Mẹ yêu", "Chị gái", "Chuyến đi biển", "Sức khỏe", "Bình an",
+            "Hạnh phúc", "20/10", "Mùa hoa nở", "Gia đình", "Yêu thương", "Kỷ niệm"
+        ];
+        let matrixDrops = [];
+        let introStartTime = performance.now();
+        let introPhase = 'matrix';
+
+        function initMatrixCanvas() {
+            matrixCanvas.width = window.innerWidth;
+            matrixCanvas.height = window.innerHeight;
+            matrixDrops = [];
+            const colWidth = window.innerWidth < 640 ? 95 : 120;
+            const cols = Math.floor(matrixCanvas.width / colWidth) + 2;
+
+            for (let i = 0; i < cols * 2; i++) {
+                matrixDrops.push({
+                    x: (i % cols) * colWidth + Math.random() * 35,
+                    y: Math.random() * -matrixCanvas.height,
+                    speed: 1.8 + Math.random() * 2.2, // Tốc độ rơi chậm, êm dịu hơn
+                    word: MATRIX_KEYWORDS[i % MATRIX_KEYWORDS.length],
+                    isGold: i % 3 === 0,
+                    fontSize: window.innerWidth < 640 ? 15 : 19,
+                    angle: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function renderMatrixIntro(elapsedSec) {
+            if (introPhase === 'galaxy') return;
+
+            mCtx.fillStyle = 'rgba(5, 2, 10, 0.18)';
+            mCtx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+
+            const centerX = matrixCanvas.width / 2;
+            const centerY = matrixCanvas.height / 2;
+
+            matrixDrops.forEach((drop) => {
+                mCtx.save();
+                mCtx.font = `bold ${drop.fontSize}px "Be Vietnam Pro", monospace`;
+
+                if (drop.isGold) {
+                    mCtx.fillStyle = '#ffd166';
+                    mCtx.shadowColor = '#f59e0b';
+                } else {
+                    mCtx.fillStyle = '#ff70a6';
+                    mCtx.shadowColor = '#ec4899';
+                }
+                mCtx.shadowBlur = 14;
+
+                if (elapsedSec < 5.5) {
+                    // Mưa chữ rơi êm đềm trong 5.5 giây đầu
+                    drop.y += drop.speed;
+                    if (drop.y > matrixCanvas.height + 40) {
+                        drop.y = -30;
+                        drop.word = MATRIX_KEYWORDS[Math.floor(Math.random() * MATRIX_KEYWORDS.length)];
+                    }
+                    mCtx.fillText(drop.word, drop.x, drop.y);
+                } else if (elapsedSec < 8.5) {
+                    // Từ giây 5.5 đến 8.5: Hút xoáy nhẹ nhàng vào tâm kết tinh thành trái tim
+                    const pullFactor = Math.min(1, (elapsedSec - 5.5) / 3.0);
+                    drop.angle += 0.08;
+                    const dx = centerX - drop.x;
+                    const dy = centerY - drop.y;
+                    drop.x += dx * (0.04 + pullFactor * 0.08) + Math.cos(drop.angle) * 3;
+                    drop.y += dy * (0.04 + pullFactor * 0.08) + Math.sin(drop.angle) * 3;
+
+                    const alpha = Math.max(0, 1 - pullFactor * 0.95);
+                    mCtx.globalAlpha = alpha;
+                    mCtx.fillText(drop.word, drop.x, drop.y);
+                }
+                mCtx.restore();
+            });
+        }
+
+        /********************************************************************
+         * 4. KHÔNG GIAN 3D THREE.JS: TRÁI TIM -> NỔ THÀNH VŨ TRỤ KÝ ỨC
+         ********************************************************************/
+        const canvas3D = document.getElementById('canvas-3d');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x07020f, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 250);
+        camera.position.set(0, 2.5, 22);
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas3D,
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        const ambientLight = new THREE.AmbientLight(0xffd6ec, 0.9);
+        scene.add(ambientLight);
+
+        const centerPointLight = new THREE.PointLight(0xff66b2, 2.2, 45);
+        centerPointLight.position.set(0, 2, 0);
+        scene.add(centerPointLight);
+
+        function createGlowDotTexture() {
+            const c = document.createElement('canvas');
+            c.width = 64; c.height = 64;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(32, 32, 2, 32, 32, 30);
+            g.addColorStop(0, 'rgba(255, 255, 255, 1)');
+            g.addColorStop(0.35, 'rgba(255, 170, 210, 0.85)');
+            g.addColorStop(0.7, 'rgba(255, 120, 170, 0.25)');
+            g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(c);
+        }
+        const glowDotTexture = createGlowDotTexture();
+
+        const PARTICLE_COUNT = 2600;
+        const particleGeo = new THREE.BufferGeometry();
+        const posArray = new Float32Array(PARTICLE_COUNT * 3);
+        const startPosArray = new Float32Array(PARTICLE_COUNT * 3);
+        const heartPosArray = new Float32Array(PARTICLE_COUNT * 3);
+        const galaxyPosArray = new Float32Array(PARTICLE_COUNT * 3);
+        const colorArray = new Float32Array(PARTICLE_COUNT * 3);
+
+        const colorPink = new THREE.Color(0xff5ca8);
+        const colorGold = new THREE.Color(0xffcf56);
+        const colorViolet = new THREE.Color(0xc77dff);
+
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            const i3 = i * 3;
+
+            startPosArray[i3] = (Math.random() - 0.5) * 45;
+            startPosArray[i3 + 1] = (Math.random() - 0.5) * 35;
+            startPosArray[i3 + 2] = (Math.random() - 0.5) * 30;
+
+            const t = Math.random() * Math.PI * 2;
+            const u = (Math.random() - 0.5) * 2;
+            const scale = 0.23 * (0.75 + Math.random() * 0.35);
+            const hx = 16 * Math.pow(Math.sin(t), 3) * scale;
+            const hy = (13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)) * scale + 0.8;
+            const hz = u * 1.4;
+
+            heartPosArray[i3] = hx;
+            heartPosArray[i3 + 1] = hy;
+            heartPosArray[i3 + 2] = hz;
+
+            const armAngle = (i / PARTICLE_COUNT) * Math.PI * 10;
+            const radius = 5.5 + Math.pow(Math.random(), 0.75) * 26;
+            galaxyPosArray[i3] = Math.cos(armAngle) * radius + (Math.random() - 0.5) * 3.5;
+            galaxyPosArray[i3 + 1] = (Math.random() - 0.5) * 14;
+            galaxyPosArray[i3 + 2] = Math.sin(armAngle) * radius + (Math.random() - 0.5) * 3.5;
+
+            posArray[i3] = startPosArray[i3];
+            posArray[i3 + 1] = startPosArray[i3 + 1];
+            posArray[i3 + 2] = startPosArray[i3 + 2];
+
+            const chosenColor = i % 3 === 0 ? colorGold : (i % 2 === 0 ? colorPink : colorViolet);
+            colorArray[i3] = chosenColor.r;
+            colorArray[i3 + 1] = chosenColor.g;
+            colorArray[i3 + 2] = chosenColor.b;
+        }
+
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        particleGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        const particleMat = new THREE.PointsMaterial({
+            size: 0.48,
+            map: glowDotTexture,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending
+        });
+
+        const galaxyPoints = new THREE.Points(particleGeo, particleMat);
+        scene.add(galaxyPoints);
+
+        /********************************************************************
+         * 5. SÁU KHUNG ẢNH HOLOGRAM 3D
+         ********************************************************************/
+        const galleryGroup = new THREE.Group();
+        scene.add(galleryGroup);
+
+        const frameMeshes = [];
+        const ORBIT_RADIUS = 10.5;
+        const TOTAL_FRAMES = memories.length;
+
+        function buildHologramFrames() {
+            while (galleryGroup.children.length > 0) {
+                galleryGroup.remove(galleryGroup.children[0]);
+            }
+            frameMeshes.length = 0;
+
+            memories.forEach((mem, idx) => {
+                const angle = (idx / TOTAL_FRAMES) * Math.PI * 2;
+                const frameHolder = new THREE.Group();
+
+                const tex = createMemoryCanvasTexture(mem, preloadedImages[idx] || null);
+                const cardGeo = new THREE.PlaneGeometry(3.8, 4.75);
+                const cardMat = new THREE.MeshBasicMaterial({
+                    map: tex,
+                    side: THREE.DoubleSide,
+                    transparent: true
+                });
+                const cardMesh = new THREE.Mesh(cardGeo, cardMat);
+                cardMesh.userData = { memoryIndex: idx };
+                frameHolder.add(cardMesh);
+
+                const glowGeo = new THREE.PlaneGeometry(4.1, 5.05);
+                const glowMat = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color(mem.themeColor),
+                    transparent: true,
+                    opacity: 0.35,
+                    side: THREE.DoubleSide,
+                    blending: THREE.AdditiveBlending
+                });
+                const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+                glowMesh.position.z = -0.06;
+                frameHolder.add(glowMesh);
+
+                const ringGeo = new THREE.RingGeometry(1.4, 1.9, 32);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: 0xffb703,
+                    side: THREE.DoubleSide,
+                    transparent: true,
+                    opacity: 0.45,
+                    blending: THREE.AdditiveBlending
+                });
+                const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+                ringMesh.rotation.x = Math.PI / 2;
+                ringMesh.position.y = -2.65;
+                frameHolder.add(ringMesh);
+
+                frameHolder.position.set(
+                    Math.cos(angle) * ORBIT_RADIUS,
+                    Math.sin(idx * 1.2) * 0.4,
+                    Math.sin(angle) * ORBIT_RADIUS
+                );
+
+                frameHolder.lookAt(
+                    Math.cos(angle) * (ORBIT_RADIUS + 10),
+                    frameHolder.position.y,
+                    Math.sin(angle) * (ORBIT_RADIUS + 10)
+                );
+
+                frameHolder.scale.set(0.001, 0.001, 0.001);
+
+                galleryGroup.add(frameHolder);
+                frameMeshes.push({
+                    holder: frameHolder,
+                    cardMesh: cardMesh,
+                    angle: angle,
+                    baseY: frameHolder.position.y
+                });
+            });
+        }
+
+        const coreGeo = new THREE.SphereGeometry(1.35, 32, 32);
+        const coreMat = new THREE.MeshBasicMaterial({
+            color: 0xff66b2,
+            transparent: true,
+            opacity: 0.25,
+            blending: THREE.AdditiveBlending
+        });
+        const coreSphere = new THREE.Mesh(coreGeo, coreMat);
+        scene.add(coreSphere);
+
+        /********************************************************************
+         * 6. HIỆU ỨNG THẢ TIM & HOA HỒNG
+         ********************************************************************/
+        const floatingHearts = [];
+
+        function createHeartSpriteTexture(emoji) {
+            const c = document.createElement('canvas');
+            c.width = 96; c.height = 96;
+            const ctx = c.getContext('2d');
+            ctx.font = '64px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 48, 48);
+            return new THREE.CanvasTexture(c);
+        }
+        const heartTextures = [
+            createHeartSpriteTexture('💖'),
+            createHeartSpriteTexture('🌹'),
+            createHeartSpriteTexture('🌸'),
+            createHeartSpriteTexture('✨')
+        ];
+
+        function triggerLoveBurst(originPos = null) {
+            const targetFrame = frameMeshes[currentFrameIndex];
+            const worldPos = new THREE.Vector3();
+            if (originPos) {
+                worldPos.copy(originPos);
+            } else if (targetFrame) {
+                targetFrame.holder.getWorldPosition(worldPos);
+            }
+
+            for (let i = 0; i < 22; i++) {
+                const mat = new THREE.SpriteMaterial({
+                    map: heartTextures[i % heartTextures.length],
+                    transparent: true,
+                    opacity: 1
+                });
+                const sprite = new THREE.Sprite(mat);
+                sprite.position.set(
+                    worldPos.x + (Math.random() - 0.5) * 4.5,
+                    worldPos.y - 1.5 + (Math.random() - 0.5) * 2,
+                    worldPos.z + (Math.random() - 0.5) * 4.5
+                );
+                const s = 0.55 + Math.random() * 0.55;
+                sprite.scale.set(s, s, s);
+                scene.add(sprite);
+
+                floatingHearts.push({
+                    sprite,
+                    vy: 0.018 + Math.random() * 0.022,
+                    vx: (Math.random() - 0.5) * 0.012,
+                    vz: (Math.random() - 0.5) * 0.012,
+                    life: 1.0
+                });
+            }
+            playChimeNote();
+        }
+
+        /********************************************************************
+         * 7. ĐIỀU KHIỂN CAMERA & TƯƠNG TÁC
+         ********************************************************************/
+        let cameraMode = 'auto';
+        let currentFrameIndex = 0;
+        let lastFrameSwitchTime = performance.now();
+        const AUTO_SWITCH_INTERVAL = 6000;
+
+        let isDragging = false;
+        let prevPointer = { x: 0, y: 0 };
+        let pointerDownPos = { x: 0, y: 0 };
+        let userOrbitAngle = 0;
+        let userCameraHeight = 1.5;
+        let userZoomDist = 17.5;
+
+        function setCameraMode(mode) {
+            cameraMode = mode;
+            const btnAuto = document.getElementById('btn-mode-auto');
+            const btnFree = document.getElementById('btn-mode-free');
+            if (mode === 'auto') {
+                btnAuto.classList.add('btn-active');
+                btnFree.classList.remove('btn-active');
+                lastFrameSwitchTime = performance.now();
+            } else {
+                btnFree.classList.add('btn-active');
+                btnAuto.classList.remove('btn-active');
+                const currentHolder = frameMeshes[currentFrameIndex].holder;
+                const worldPos = new THREE.Vector3();
+                currentHolder.getWorldPosition(worldPos);
+                userOrbitAngle = Math.atan2(worldPos.z, worldPos.x);
+            }
+        }
+
+        function updateWishCardUI(index) {
+            const mem = memories[index];
+            if (!mem) return;
+            document.getElementById('card-badge').textContent = `Kỷ niệm ${index + 1} / ${TOTAL_FRAMES}`;
+            document.getElementById('card-title').textContent = mem.title;
+            document.getElementById('card-wish').textContent = mem.wish;
+            document.getElementById('card-signature').textContent = `— ${globalSignature} —`;
+        }
+
+        function focusOnFrame(index, withBurst = false) {
+            currentFrameIndex = (index + TOTAL_FRAMES) % TOTAL_FRAMES;
+            lastFrameSwitchTime = performance.now();
+            updateWishCardUI(currentFrameIndex);
+            if (withBurst) triggerLoveBurst();
+        }
+
+        function nextFrame() { focusOnFrame(currentFrameIndex + 1, true); }
+        function prevFrame() { focusOnFrame(currentFrameIndex - 1, true); }
+
+        const raycaster = new THREE.Raycaster();
+        const pointerNDC = new THREE.Vector2();
+
+        canvas3D.addEventListener('pointerdown', (e) => {
+            isDragging = true;
+            prevPointer.x = e.clientX;
+            prevPointer.y = e.clientY;
+            pointerDownPos.x = e.clientX;
+            pointerDownPos.y = e.clientY;
+        });
+
+        window.addEventListener('pointermove', (e) => {
+            if (!isDragging || introPhase !== 'galaxy') return;
+            const dx = e.clientX - prevPointer.x;
+            const dy = e.clientY - prevPointer.y;
+
+            if (Math.abs(e.clientX - pointerDownPos.x) > 12 && cameraMode === 'auto') {
+                setCameraMode('free');
+            }
+
+            if (cameraMode === 'free') {
+                userOrbitAngle -= dx * 0.007;
+                userCameraHeight = Math.max(-4, Math.min(7, userCameraHeight + dy * 0.02));
+            }
+
+            prevPointer.x = e.clientX;
+            prevPointer.y = e.clientY;
+        });
+
+        window.addEventListener('pointerup', (e) => {
+            if (!isDragging) return;
+            isDragging = false;
+
+            const moveDist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+            if (moveDist < 10 && introPhase === 'galaxy') {
+                pointerNDC.x = (e.clientX / window.innerWidth) * 2 - 1;
+                pointerNDC.y = -(e.clientY / window.innerHeight) * 2 + 1;
+                raycaster.setFromCamera(pointerNDC, camera);
+
+                const cardList = frameMeshes.map(f => f.cardMesh);
+                const intersects = raycaster.intersectObjects(cardList);
+                if (intersects.length > 0) {
+                    const hitIndex = intersects[0].object.userData.memoryIndex;
+                    setCameraMode('auto');
+                    focusOnFrame(hitIndex, true);
+                }
+            }
+        });
+
+        /********************************************************************
+         * 8. ÂM NHẠC NỀN GIA ĐÌNH
+         ********************************************************************/
+        const backgroundMusic = new Audio('assets/audio/ba-ngon-nen-lung-linh-karaoke-beat.mp3');
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.35;
+
+        async function toggleMusic() {
+            const soundIcon = document.getElementById('sound-icon');
+            if (backgroundMusic.paused) {
+                try {
+                    await backgroundMusic.play();
+                    soundIcon.textContent = '🔊';
+                } catch (error) {
+                    soundIcon.textContent = '🔇';
+                }
+            } else {
+                backgroundMusic.pause();
+                soundIcon.textContent = '🔇';
+            }
+        }
+
+        function playChimeNote() {}
+
+        /********************************************************************
+         * 9. QUẢN LÝ DRAWER & TÙY CHỈNH
+         ********************************************************************/
+        function togglePhotoDrawer(show) {
+            const backdrop = document.getElementById('photo-drawer-backdrop');
+            if (show) {
+                renderFramesEditorList();
+                backdrop.classList.remove('hidden');
+                setTimeout(() => backdrop.classList.remove('opacity-0'), 20);
+            } else {
+                backdrop.classList.add('opacity-0');
+                setTimeout(() => backdrop.classList.add('hidden'), 300);
+            }
+        }
+
+        function renderFramesEditorList() {
+            const container = document.getElementById('frames-editor-list');
+            container.innerHTML = '';
+
+            memories.forEach((mem, idx) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = "p-3.5 rounded-2xl bg-white/5 border border-pink-500/30 space-y-2.5";
+                itemDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-pink-600 text-white">
+                            Khung ảnh #${idx + 1}
+                        </span>
+                        <label class="cursor-pointer text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-200 hover:bg-amber-500/40">
+                            📁 Chọn ảnh khác
+                            <input type="file" accept="image/*" class="hidden" onchange="handleSingleFrameFile(event, ${idx})" />
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-pink-200/70 mb-0.5">Tiêu đề kỷ niệm:</label>
+                        <input type="text" value="${mem.title.replace(/"/g, '&quot;')}"
+                            oninput="updateFrameText(${idx}, 'title', this.value)"
+                            class="w-full px-3 py-1.5 rounded-lg bg-black/50 border border-pink-400/30 text-sm text-amber-200 font-semibold focus:outline-none focus:border-amber-400" />
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-pink-200/70 mb-0.5">Lời chúc:</label>
+                        <textarea rows="2" oninput="updateFrameText(${idx}, 'wish', this.value)"
+                            class="w-full px-3 py-1.5 rounded-lg bg-black/50 border border-pink-400/30 text-xs sm:text-sm text-pink-50 focus:outline-none focus:border-amber-400">${mem.wish}</textarea>
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function handleSingleFrameFile(event, frameIndex) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    preloadedImages[frameIndex] = img;
+                    refreshFrameTexture(frameIndex);
+                    if (currentFrameIndex === frameIndex) updateWishCardUI(frameIndex);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleBulkFiles(event) {
+            const files = Array.from(event.target.files).slice(0, TOTAL_FRAMES);
+            files.forEach((file, idx) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        preloadedImages[idx] = img;
+                        refreshFrameTexture(idx);
+                        if (currentFrameIndex === idx) updateWishCardUI(idx);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateFrameText(frameIndex, field, value) {
+            memories[frameIndex][field] = value;
+            if (field === 'title') refreshFrameTexture(frameIndex);
+            if (currentFrameIndex === frameIndex) updateWishCardUI(frameIndex);
+        }
+
+        function updateSignature(val) {
+            globalSignature = val || "Con trai của mẹ và thằng em trai của chị";
+            updateWishCardUI(currentFrameIndex);
+        }
+
+        function refreshFrameTexture(frameIndex) {
+            const target = frameMeshes[frameIndex];
+            if (!target) return;
+            const newTex = createMemoryCanvasTexture(memories[frameIndex], preloadedImages[frameIndex] || null);
+            target.cardMesh.material.map.dispose();
+            target.cardMesh.material.map = newTex;
+            target.cardMesh.material.needsUpdate = true;
+        }
+
+        function resetDefaultMemories() {
+            memories = JSON.parse(JSON.stringify(DEFAULT_MEMORIES));
+            globalSignature = "Con trai của mẹ và thằng em trai của chị";
+            document.getElementById('input-signature').value = globalSignature;
+            preloadAllImages(() => {
+                buildHologramFrames();
+                frameMeshes.forEach(f => f.holder.scale.set(1, 1, 1));
+                updateWishCardUI(currentFrameIndex);
+                renderFramesEditorList();
+            });
+        }
+
+        /********************************************************************
+         * 10. VÒNG LẶP ANIMATION (MỞ ĐẦU 8.5 GIÂY & GALAXY 3D)
+         ********************************************************************/
+        function replayIntro() {
+            introStartTime = performance.now();
+            introPhase = 'matrix';
+            matrixCanvas.style.opacity = '1';
+            document.getElementById('main-ui').classList.add('opacity-0');
+            document.getElementById('intro-overlay').style.opacity = '1';
+            document.getElementById('intro-status-text').textContent = 'Đang mở hộp thời gian ký ức 20/10...';
+
+            frameMeshes.forEach(f => f.holder.scale.set(0.001, 0.001, 0.001));
+            camera.position.set(0, 2.5, 22);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function animate(now) {
+            requestAnimationFrame(animate);
+
+            const elapsed = (now - introStartTime) / 1000;
+            const posAttr = particleGeo.attributes.position;
+
+            // --- GIAI ĐOẠN 1 (0s - 5.5s): Mưa chữ Matrix Coder êm dịu ---
+            if (elapsed < 5.5) {
+                renderMatrixIntro(elapsed);
+                particleMat.opacity = Math.min(0.4, elapsed * 0.1);
+            }
+            // --- GIAI ĐOẠN 2 (5.5s - 8.5s): Hút xoáy kết tinh thành Trái Tim 3D đập nhịp nhàng ---
+            else if (elapsed < 8.5) {
+                renderMatrixIntro(elapsed);
+                if (introPhase === 'matrix') {
+                    introPhase = 'vortex';
+                    document.getElementById('intro-status-text').textContent = 'Kết tinh yêu thương gửi tới Mẹ & Chị... 💖';
+                }
+
+                const tMorph = Math.min(1, (elapsed - 5.5) / 3.0);
+                const easeMorph = 1 - Math.pow(1 - tMorph, 3);
+                const heartBeat = 1 + Math.sin((elapsed - 5.5) * 12) * 0.14;
+
+                particleMat.opacity = 0.95;
+                for (let i = 0; i < PARTICLE_COUNT; i++) {
+                    const i3 = i * 3;
+                    const tx = heartPosArray[i3] * heartBeat;
+                    const ty = heartPosArray[i3 + 1] * heartBeat;
+                    const tz = heartPosArray[i3 + 2] * heartBeat;
+
+                    posAttr.array[i3] = startPosArray[i3] + (tx - startPosArray[i3]) * easeMorph;
+                    posAttr.array[i3 + 1] = startPosArray[i3 + 1] + (ty - startPosArray[i3 + 1]) * easeMorph;
+                    posAttr.array[i3 + 2] = startPosArray[i3 + 2] + (tz - startPosArray[i3 + 2]) * easeMorph;
+                }
+                posAttr.needsUpdate = true;
+                galaxyPoints.rotation.y = (elapsed - 5.5) * 0.25;
+            }
+            // --- GIAI ĐOẠN 3 (Từ 8.5s trở đi): BÙM! Nổ thành vũ trụ 3D ngân hà ---
+            else {
+                if (introPhase !== 'galaxy') {
+                    introPhase = 'galaxy';
+                    matrixCanvas.style.opacity = '0';
+                    document.getElementById('intro-overlay').style.opacity = '0';
+                    document.getElementById('main-ui').classList.remove('opacity-0');
+                    lastFrameSwitchTime = now;
+                    updateWishCardUI(currentFrameIndex);
+                    triggerLoveBurst(new THREE.Vector3(0, 1, 0));
+                }
+
+                const galaxyElapsed = elapsed - 8.5;
+                const explodeProgress = Math.min(1, galaxyElapsed / 1.8);
+                const easeOutExpo = 1 - Math.pow(1 - explodeProgress, 4);
+
+                for (let i = 0; i < PARTICLE_COUNT; i++) {
+                    const i3 = i * 3;
+                    posAttr.array[i3] = heartPosArray[i3] + (galaxyPosArray[i3] - heartPosArray[i3]) * easeOutExpo;
+                    posAttr.array[i3 + 1] = heartPosArray[i3 + 1] + (galaxyPosArray[i3 + 1] - heartPosArray[i3 + 1]) * easeOutExpo;
+                    posAttr.array[i3 + 2] = heartPosArray[i3 + 2] + (galaxyPosArray[i3 + 2] - heartPosArray[i3 + 2]) * easeOutExpo;
+                }
+                posAttr.needsUpdate = true;
+
+                galaxyPoints.rotation.y += 0.0009;
+                coreSphere.scale.setScalar(1 + Math.sin(now * 0.003) * 0.15);
+
+                const frameScale = easeOutExpo;
+                galleryGroup.rotation.y += 0.0012;
+
+                frameMeshes.forEach((f, idx) => {
+                    f.holder.scale.setScalar(Math.max(0.001, frameScale));
+                    f.holder.position.y = f.baseY + Math.sin(now * 0.002 + idx) * 0.25;
+                });
+
+                if (cameraMode === 'auto') {
+                    if (now - lastFrameSwitchTime > AUTO_SWITCH_INTERVAL) {
+                        focusOnFrame(currentFrameIndex + 1, false);
+                    }
+
+                    const activeFrame = frameMeshes[currentFrameIndex];
+                    if (activeFrame) {
+                        const frameWorldPos = new THREE.Vector3();
+                        activeFrame.holder.getWorldPosition(frameWorldPos);
+
+                        const radialDir = new THREE.Vector3(frameWorldPos.x, 0, frameWorldPos.z).normalize();
+                        const camDistFromFrame = window.innerWidth < 640 ? 6.8 : 5.6;
+                        const desiredCamPos = new THREE.Vector3(
+                            frameWorldPos.x + radialDir.x * camDistFromFrame,
+                            frameWorldPos.y + 0.15,
+                            frameWorldPos.z + radialDir.z * camDistFromFrame
+                        );
+
+                        camera.position.lerp(desiredCamPos, 0.045);
+
+                        const lookTarget = new THREE.Vector3(
+                            frameWorldPos.x,
+                            frameWorldPos.y - (window.innerWidth < 640 ? 0.55 : 0.3),
+                            frameWorldPos.z
+                        );
+                        camera.lookAt(lookTarget);
+                    }
+                } else {
+                    const targetX = Math.cos(userOrbitAngle) * userZoomDist;
+                    const targetZ = Math.sin(userOrbitAngle) * userZoomDist;
+                    camera.position.lerp(new THREE.Vector3(targetX, userCameraHeight, targetZ), 0.08);
+                    camera.lookAt(0, 0, 0);
+                }
+            }
+
+            for (let i = floatingHearts.length - 1; i >= 0; i--) {
+                const item = floatingHearts[i];
+                item.sprite.position.y += item.vy;
+                item.sprite.position.x += item.vx + Math.sin(now * 0.005 + i) * 0.01;
+                item.sprite.position.z += item.vz;
+                item.life -= 0.006;
+                item.sprite.material.opacity = Math.max(0, item.life);
+                if (item.life <= 0) {
+                    scene.remove(item.sprite);
+                    item.sprite.material.dispose();
+                    floatingHearts.splice(i, 1);
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            initMatrixCanvas();
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = function () {
+            initMatrixCanvas();
+            preloadAllImages(() => {
+                buildHologramFrames();
+                introStartTime = performance.now();
+                requestAnimationFrame(animate);
+            });
+        };
+    </script>
+</body>
+</html>
